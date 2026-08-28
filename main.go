@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"sync"
 	"time"
 )
 
@@ -13,7 +14,10 @@ type visitor struct {
 }
 
 // map[ip]visitor format
-var visitors = make(map[string]*visitor)
+var (
+	visitors = make(map[string]*visitor)
+	mu       sync.Mutex
+)
 
 func main() {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -24,6 +28,11 @@ func main() {
 			http.Error(w, "Server Error", http.StatusInternalServerError)
 			return
 		}
+
+		// lock the request
+		mu.Lock()
+		//unlock before return
+		defer mu.Unlock()
 
 		v, exists := visitors[ip]
 		if !exists {
